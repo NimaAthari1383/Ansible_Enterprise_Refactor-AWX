@@ -79,21 +79,32 @@ Vagrant.configure(2) do |config|
     Nodes5 = 1
   (1..Nodes5).each do |wordpress|
     config.vm.define "asma-wp-test" do |asma_wp_test|
-      asma_wp_test.vm.box = IMAGE_ubuntu_2204
+      asma_wp_test.vm.box = "bento/ubuntu-24.04"
       asma_wp_test.vm.hostname = "asma-wp-test.nima.local"
-      asma_wp_test.vm.network "private_network", ip: "192.168.252.100"
-      asma_wp_test.vm.network "forwarded_port", guest: 22, host: 8090, id: "ssh"
+      asma_wp_test.vm.network "private_network",
+        ip: "192.168.252.100"
+      asma_wp_test.vm.network "forwarded_port",
+        guest: 22,
+        host: 8090,
+        id: "ssh"
       asma_wp_test.vm.provider "virtualbox" do |v|
         v.name = "Asma-WP-Test-1"
         v.memory = 4096
         v.cpus = 2
       end
+      asma_wp_test.trigger.after :up do |trigger|
+        trigger.name = "Launch AWX automation"
+        trigger.info = "Launching AWX after Vagrant up"
+        trigger.run = {
+          path: "scripts/trigger-awx.sh"
+        }
+      end
     end
   end
 
-  config.vm.provision "ansible" do |ansible|
-    ansible.playbook = "playbooks/defaults.yml"
-    ansible.inventory_path = "inventories/lab/hosts.yml"
-  end
+  # config.vm.provision "ansible" do |ansible|
+  #   ansible.playbook = "playbooks/defaults.yml"
+  #   ansible.inventory_path = "inventories/lab/hosts.yml"
+  # end
 
 end
