@@ -45,8 +45,14 @@
 - name: Validate CA subject
   ansible.builtin.assert:
     that:
-      - nima_expected_subject in nima_ca_info.stdout
-    fail_msg: "CA subject mismatch. Got: {{ nima_ca_info.stdout }}"
+      - >-
+        (nima_expected_subject | regex_replace('\s*=\s*', '='))
+        in
+        (nima_ca_info.stdout | regex_replace('\s*=\s*', '='))
+    fail_msg: >-
+      CA subject mismatch.
+      Expected: {{ nima_expected_subject }}
+      Actual: {{ nima_ca_info.stdout }}
   tags:
     - ca_config
 
