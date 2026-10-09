@@ -1,4 +1,4 @@
-IMAGE_ubuntu_2204   = "bento/jammy64-local"
+IMAGE_ubuntu_2204   = "bento/ubuntu-24.04"
 IMAGE_Debian_12     = "bento/debian-12"
 
 ENV['VAGRANT_NO_PARALLEL'] = 'yes'
@@ -76,61 +76,31 @@ Vagrant.configure(2) do |config|
     end
   end
 
-
-  # ===========================================
-  # ASMA WP TEST - UBUNTU 22.04 LTS
-  # ===========================================
-
-  config.vm.define "asma-wp-test" do |asma_wp_test|
-    # Operating System
-    asma_wp_test.vm.box = IMAGE_ubuntu_2204
-    # Hostname
-    asma_wp_test.vm.hostname = "asma-wp-test.nima.local"
-    # Host-only network
-    asma_wp_test.vm.network "private_network",
-      ip: "192.168.252.100",
-      netmask: "255.255.255.0"
-    # SSH port forwarding
-    asma_wp_test.vm.network "forwarded_port",
-      guest: 22,
-      host: 8090,
-      host_ip: "127.0.0.1",
-      id: "ssh"
-    # Primary disk: 80GB
-    asma_wp_test.vm.disk :disk,
-      size: "80GB",
-      primary: true
-
-    # VirtualBox configuration
-    asma_wp_test.vm.provider "virtualbox" do |vb|
-      vb.name = "Asma-WP-Test-2204"
-      vb.memory = 8192
-      vb.cpus = 4
-      vb.gui = false
+    Nodes5 = 1
+  (1..Nodes5).each do |wordpress|
+    config.vm.define "asma-wp-test" do |asma_wp_test|
+      asma_wp_test.vm.box = "bento/ubuntu-24.04"
+      asma_wp_test.vm.hostname = "asma-wp-test.nima.local"
+      asma_wp_test.vm.network "private_network",
+        ip: "192.168.252.100"
+      asma_wp_test.vm.network "forwarded_port",
+        guest: 22,
+        host: 8090,
+        id: "ssh"
+      asma_wp_test.vm.provider "virtualbox" do |v|
+        v.name = "Asma-WP-Test"
+        v.memory = 8192
+        v.cpus = 4
+        v.disksize.size = '80GB'
+      end
+      asma_wp_test.trigger.after :up do |trigger|
+        trigger.name = "Launch AWX automation"
+        trigger.info = "Launching AWX after Vagrant up"
+        trigger.run = {
+          path: "scripts/trigger-awx.sh"
+        }
+      end
     end
-    # Create management user
-    asma_wp_test.vm.provision "shell", inline: <<-SHELL
-      set -eu
-      if ! id nima >/dev/null 2>&1; then
-        useradd -m -s /bin/bash nima
-      fi
-      usermod -s /bin/bash nima
-      usermod -aG sudo nima
-      echo 'nima:nima' | chpasswd
-      printf '%s\\n' 'nima ALL=(ALL) NOPASSWD:ALL' \
-        > /etc/sudoers.d/nima
-      chmod 0440 /etc/sudoers.d/nima
-      visudo -cf /etc/sudoers.d/nima
-      echo "Provisioning completed successfully"
-    SHELL
-    # AWX trigger - Disabled during initial setup
-    # asma_wp_test.trigger.after :up do |trigger|
-    #   trigger.name = "Launch AWX automation"
-    #   trigger.info = "Launching AWX after Vagrant up"
-    #   trigger.run = {
-    #     path: "scripts/trigger-awx.sh"
-    #   }
-    # end
   end
 
   # config.vm.provision "ansible" do |ansible|
