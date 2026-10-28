@@ -1,3 +1,0 @@
----
-# The collection fails explicitly for this method until ELK enrollment is implemented.
-observability_agent_method: elk
